@@ -30,7 +30,8 @@ task :render do
     section_template = Tilt.new('templates/section.html.haml')
     slides = []
     Dir.glob("slides/**").sort.each do |slide|
-      slides << section_template.render(self, :content => File.read(slide))
+      content = Tilt.new(slide).render(self)
+      slides << section_template.render(self, :content => content)
     end
 
     update_doc("div.slides","\n#{slides.join("\n")}\n")
@@ -40,11 +41,16 @@ task :render do
     end
 
     # Publishing the docs to gh-pages
-    gh_pages(dest)
+    if ENV['publish']
+      gh_pages(dest)
+    else
+      FileUtils.rm_rf 'out'
+      FileUtils.cp_r dest, 'out'
+    end
   end
 end
 
-# Technique borrowed from showoff
+# TODO: This sometimes leaves artifacts, there should be a better way
 def gh_pages(dir)
   stashed = `git stash`
   `git checkout --orphan gh-pages && git rm -rf .`
@@ -54,7 +60,6 @@ def gh_pages(dir)
   `git commit -m "First commit"`
   `git push origin gh-pages -f`
 ensure
-  `git clean -dfx`
   `git checkout master`
   `git branch -D gh-pages`
   unless stashed.match(/No local changes/)
