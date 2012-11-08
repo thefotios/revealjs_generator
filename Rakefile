@@ -26,6 +26,7 @@ task :render do
   dest = config.out
   FileUtils.rm_r(dest) if Dir.exists?(dest)
   FileUtils.cp_r 'reveal.js', dest
+  FileUtils.rm Dir.glob("#{dest}/.git*")
 
   # Load the templates
   @doc = load_template
@@ -59,7 +60,6 @@ task :publish do
   end
 end
 
-# TODO: This sometimes leaves artifacts, there should be a better way
 def gh_pages(dir)
   `git add #{dir}`
   sha = `git write-tree`.chomp
@@ -69,6 +69,7 @@ def gh_pages(dir)
   extra = ghp_sha != 'gh-pages' ? "-p #{ghp_sha}" : ''
   commit_sha = `echo 'static presentation' | git commit-tree #{tree_sha} #{extra}`.chomp
   `git update-ref refs/heads/gh-pages #{commit_sha}`
+  `git push origin gh-pages -f`
 end
 
 def git_commit(path = nil)
