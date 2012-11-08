@@ -14,4 +14,12 @@ but using reveal.js
    pages
 1. Slides will now be viewable at http://username.github.com/project
 
+
+# TODO
+* Creating proper sections out of either nested slides or folders
+* For some reason parsing heading levels in markdown isn't working
+  * Might have to to with the multiple times we're converting it back
+and forth from file to string
+* Handle `!SLIDE` options, like class and template type
+
 [Tilt]: https://github.com/rtomayko/tilt
