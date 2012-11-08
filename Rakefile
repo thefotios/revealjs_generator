@@ -39,15 +39,41 @@ task :render do
   puts "Rendering templates"
   section_template = Tilt.new('templates/section.html.haml')
   slides = []
-  Dir.glob("slides/**").sort.each do |slide|
-    content = Tilt.new(slide).render(self)
-    slides << section_template.render(self, :content => content)
+  get_slides.each do |slide|
+    split_slide(slide) do |path|
+      content = Tilt.new(path).render(self)
+      content.gsub!(/~~~CONFIG:(.*)~~~/) do
+        config.send($1)
+      end
+      slides << section_template.render(self, :content => content, :config => config)
+    end
   end
 
   update_doc("div.slides","\n#{slides.join("\n")}\n")
 
   File.open(File.join(dest,'index.html'),'w') do |f|
     f.write @doc.to_html
+  end
+end
+
+def get_slides
+  Dir.glob("slides/**/**").select{|file| File.file?(file) }.sort
+end
+
+def split_slide(slide)
+  # Use this for creating tempfiles
+  filetype = File.extname(slide)
+  # Split files in case we declare a !SLIDE
+  slides = File.read(slide).split(/\n(?=^!SLIDE)/)
+  # TODO: For now, we won't deal with slide info
+  slides.map!{|x| x.gsub(/^!SLIDE.*\n/,'') }
+
+  slides.each do |content|
+    Tempfile.open(['temp',filetype]) do |file|
+      file.write(content)
+      file.close
+      yield file.path
+    end
   end
 end
 
